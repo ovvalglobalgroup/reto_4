@@ -4,11 +4,6 @@
       "estudiante_id": "3",
       "semestres": [
         {
-          "anio": 2005,
-          "term": 2,
-          "materias": []
-        },
-        {
           "anio": 2024,
           "term": 1,
           "materias": []
@@ -18,11 +13,16 @@
           "term": 1,
           "materias": [
             {
-              "cod": "ED-101",
+              "cod": "BDD-101",
               "nombre": "Base de Datos",
               "nota": 19.0
             }
           ]
+        },
+        {
+          "anio": 2025,
+          "term": 2,
+          "materias": []
         }
       ]
     }

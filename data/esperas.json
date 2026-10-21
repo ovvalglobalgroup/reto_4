@@ -3,19 +3,25 @@
   "cupos": 3,
   "simple": [
     {
-      "id": "5",
-      "nombre": "Sofía",
-      "correo": "",
-      "prioridad": null
-    }
-  ],
-  "circular": [
-    {
       "id": "2",
       "nombre": "Luis",
       "correo": "",
       "prioridad": null
+    },
+    {
+      "id": "5",
+      "nombre": "Sofia",
+      "correo": "",
+      "prioridad": null
     }
   ],
-  "prioridad": []
+  "circular": [],
+  "prioridad": [
+    {
+      "id": "6",
+      "nombre": "Diego",
+      "correo": "",
+      "prioridad": 4
+    }
+  ]
 }
