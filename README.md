@@ -1,40 +1,52 @@
 # SIGA - Sistema Integral de Gestión Académica
 
-**Reto 4 de Programación II: estructuras enlazadas, historial académico, persistencia, pruebas y eficiencia.**
+Proyecto correspondiente al **Reto 4 de Programación II**, desarrollado en Python para integrar estructuras de datos enlazadas en un sistema de gestión académica.
 
-## Requisitos y ejecución
+El programa permite administrar inscripciones, cupos, listas de espera, estudiantes prioritarios e historiales académicos. También incorpora operaciones para deshacer cambios, guardar y recuperar información, realizar pruebas unitarias y analizar el rendimiento de las estructuras implementadas.
 
-- Python **3.10 o superior**; no es necesario instalar paquetes de terceros.
-- Abrir una terminal en la carpeta `SIGA_Reto4`.
+## 1. Requisitos y ejecución
 
-```bash
-python siga.py
-```
+Para ejecutar el proyecto se necesita:
 
-La aplicación contiene las **11 opciones** solicitadas en el menú. Ejecute también:
+- Python 3.10 o superior.
+- Una terminal de Windows (CMD o PowerShell).
+- No se requiere instalar paquetes externos.
 
-```bash
-python siga.py --demo
-python siga.py --benchmark
-python -m unittest discover -s tests -v
-```
+Desde la carpeta principal `SIGA_Reto4`, ejecutar:
 
-También se incluye `SIGA_Reto4_Standalone.py`: contiene toda la aplicación en un **único archivo** para entregas que no permitan subir carpetas. Se ejecuta con `python SIGA_Reto4_Standalone.py` y admite `--demo` / `--benchmark`. Para entregar y defender el diseño modular es preferible el proyecto completo.
+`py index.py`
 
-En Windows, si el comando `python` no funciona, intentar `py siga.py`, `py siga.py --demo` y `py -m unittest discover -s tests -v`.
+En otros sistemas donde esté disponible el comando `python`, se puede utilizar:
 
-## Estructura del proyecto
+`python index.py`
+
+La aplicación muestra un menú con **11 opciones**. Antes de registrar estudiantes o gestionar inscripciones, es necesario configurar un curso mediante la opción 1, indicando su nombre y cantidad de cupos.
+
+También se encuentran disponibles los siguientes comandos:
+
+| Comando | Función |
+|---|---|
+| `py index.py` | Inicia el menú interactivo. |
+| `py index.py --demo` | Ejecuta una demostración de los principales escenarios del sistema. |
+| `py index.py --benchmark` | Realiza las mediciones de rendimiento y genera un archivo CSV. |
+| `py -m unittest discover -s tests -v` | Ejecuta las pruebas unitarias disponibles. |
+
+## 2. Estructura del proyecto
+
+El programa está organizado en módulos para separar las estructuras de datos, las reglas académicas y las operaciones de almacenamiento.
 
 ```text
 SIGA_Reto4/
-├── siga.py                 # Menú CLI, demo y modo benchmark
+├── index.py
 ├── src/
-│   ├── estructuras.py      # Nodos, pila, colas y listas propias
-│   ├── modelos.py          # Estudiante, Semestre, Materia
-│   ├── sistema.py          # Reglas de inscripción, historial y deshacer
-│   ├── persistencia.py     # CSV y JSON, carga transaccional
-│   └── benchmarks.py       # Cinco ejecuciones y perf_counter()
+│   ├── __init__.py
+│   ├── estructuras.py
+│   ├── modelos.py
+│   ├── sistema.py
+│   ├── persistencia.py
+│   └── benchmarks.py
 ├── tests/
+│   ├── __init__.py
 │   ├── test_estructuras.py
 │   └── test_sistema.py
 ├── data/
@@ -42,52 +54,153 @@ SIGA_Reto4/
 │   ├── historial.json
 │   ├── esperas.json
 │   └── benchmarks.csv
-├── evidencias/             # Salidas reproducibles y capturas
-├── GUIA_VIDEO.md
 └── README.md
 ```
 
-## Diseño de las estructuras
+**Nota:** la carpeta `data/` se crea automáticamente cuando se realiza una exportación o se ejecutan los benchmarks. Los archivos que contiene se generan según las operaciones realizadas. Los directorios y archivos mostrados deben coincidir con los incluidos en la entrega.
 
-- **Pila**: nodos simples enlazados; `push`, `pop`, `peek`, `is_empty`, `size`.
-- **ColaSimple**: FIFO mediante referencias al principio y al final.
-- **ColaCircular**: lista circular simple con nodo `último`; `último.siguiente` señala el primero.
-- **ColaPrioridad**: cinco colas enlazadas (niveles 1 a 5); se explora primero nivel **5**, y el empate se resuelve mediante FIFO.
-- **ListaSimple**: inscritos y materias con inserción al final, búsqueda, eliminación y recorrido.
-- **ListaDoble**: historial académico ordenado por `(anio, term)`; avance, retroceso, búsqueda y eliminación.
-- **Deshacer**: instantáneas del estado lógico anterior en una pila enlazada. Una operación de procesamiento o retiro, aunque involucre varias transferencias, se revierte como una sola transacción.
+### Responsabilidad de los módulos
 
-Las listas nativas de Python **no se usan como contenedor base de las estructuras**. Solo se usan para representar registros al exportar JSON/CSV, preparar mensajes de consola y guardar las mediciones.
+| Archivo | Función |
+|---|---|
+| `index.py` | Contiene el menú principal, las validaciones de entrada, la demostración y el acceso a benchmarks. |
+| `estructuras.py` | Implementa nodos, pilas, colas y listas enlazadas. |
+| `modelos.py` | Define las entidades Estudiante, Materia y Semestre. |
+| `sistema.py` | Coordina las inscripciones, cupos, retiros, historiales y operaciones de deshacer. |
+| `persistencia.py` | Permite exportar e importar información mediante CSV y JSON. |
+| `benchmarks.py` | Ejecuta las mediciones de rendimiento y guarda sus resultados. |
+| `tests/` | Contiene las pruebas automatizadas del proyecto. |
 
-## Reglas del sistema
+## 3. Estructuras de datos implementadas
 
-1. El estudiante **sin prioridad** entra en la cola simple. El que indique `p=1..5` entra en la cola de prioridad.
-2. Al procesar turnos con cupos, se atiende primero la prioridad más alta y luego la cola simple.
-3. Con el curso lleno, los turnos normales pasan a la **cola circular**. Los prioritarios esperan en **ColaPrioridad** hasta un retiro.
-4. Un retiro libera una plaza y la reasigna desde **prioridad > circular > simple** (la simple se usa solo como respaldo cuando las otras están vacías).
-5. Un mismo ID no puede estar simultáneamente inscrito o en dos colas. El historial puede mantenerse después del retiro.
-6. La escala de calificaciones asumida para el ejercicio es **0-20** y los términos admitidos son **1 a 4**. Modificar `src/modelos.py` si el docente usa otra escala.
-7. `Configurar curso` reinicia los registros del curso actual y puede revertirse con `Deshacer`.
+Las estructuras se desarrollaron mediante nodos propios, sin utilizar `list` ni `deque` como contenedores base.
 
-## Persistencia
+- **Pila:** utiliza el principio LIFO para almacenar y recuperar registros de acciones.
+- **ColaSimple:** administra estudiantes normales según el orden de llegada (FIFO).
+- **ColaCircular:** mantiene a los estudiantes normales que pasan a espera cuando no existen cupos.
+- **ColaPrioridad:** trabaja con cinco niveles de prioridad, donde 5 es el mayor. Conserva el orden FIFO entre estudiantes del mismo nivel.
+- **ListaSimple:** almacena estudiantes inscritos y materias académicas.
+- **ListaDoble:** organiza los semestres cronológicamente y permite recorrerlos en ambos sentidos.
 
-`data/inscritos.csv` contiene `id,nombre,correo,cod_curso,prioridad`; el último campo adicional conserva la prioridad original del inscrito al reimportar.
+Las listas y diccionarios nativos de Python se utilizan como representaciones temporales para operaciones como la serialización, la validación, los mensajes y las mediciones, pero no sustituyen a las estructuras enlazadas principales.
 
-`data/historial.json` contiene `historiales`, con una entrada por estudiante y la clave `semestres` para sus periodos. `data/esperas.json` almacena las colas `simple`, `circular`, `prioridad` además de la configuración del curso. Ambos amplían el formato básico sugerido en la consigna para que se pueda **restaurar todo el estado**, no solo una cola.
+## 4. Reglas de funcionamiento
 
-La importación valida CSV, JSON, IDs duplicados, cupos, rango de prioridades, notas y organización; **si ocurre un error, se conserva intacto el sistema que estaba en memoria**. Tras una importación correcta, es posible revertirla con la opción 8.
+1. El usuario debe configurar el curso antes de gestionar estudiantes, indicando su nombre y la cantidad de cupos disponibles.
 
-## Pruebas y eficiencia
+2. Los estudiantes sin prioridad ingresan a `ColaSimple`. Los que tienen una prioridad del 1 al 5 ingresan a `ColaPrioridad`.
 
-```bash
-python -m unittest discover -s tests -v
-python siga.py --benchmark
-```
+3. Al procesar los turnos, se atiende primero a los estudiantes con mayor prioridad. Si no existen turnos prioritarios pendientes, se continúa con los estudiantes normales.
 
-Los benchmarks calculan el **promedio de cinco ejecuciones** y la desviación estándar, en milisegundos. Cubren n=1.000, 5.000 y 10.000 para listas simples y dobles, y 10.000 inserciones + 10.000 extracciones para las tres colas. Las preparaciones de las pruebas de búsqueda y eliminación se realizan **fuera del intervalo cronometrado**.
+4. Cuando el curso está lleno, los turnos normales que se procesan pasan a `ColaCircular`. Los prioritarios permanecen en `ColaPrioridad` hasta que pueda asignárseles un cupo.
 
-Los resultados reales dependen de cada computadora y deben regenerarse si se usan cifras en una defensa oral.
+5. Cuando un estudiante inscrito se retira, el sistema intenta reasignar su cupo siguiendo este orden: **ColaPrioridad → ColaCircular → ColaSimple**.
 
-## Guía de evaluación
+6. El sistema valida los identificadores para evitar que un mismo estudiante figure simultáneamente en varias estructuras activas.
 
-Para el video, seguir `GUIA_VIDEO.md`. El comando `--demo` ejecuta los casos funcionales con resultados reales; `--benchmark` genera la tabla; la suite de `unittest` certifica los casos normales y límite. El informe en PDF incluye introducción, contexto, decisiones, Big-O, casos de prueba, evidencias, mediciones, reflexión, referencias APA y el anexo de código.
+7. Los historiales académicos almacenan períodos, materias y calificaciones. Para este ejercicio se utiliza una escala de notas de 0 a 20 y términos académicos del 1 al 4.
+
+8. La opción DESHACER recupera el estado anterior de la última operación registrada mediante una pila de acciones.
+
+9. Configurar nuevamente un curso reinicia sus registros activos. Esta operación puede deshacerse mientras su registro permanezca en la pila.
+
+## 5. Persistencia de datos
+
+El programa permite guardar y recuperar información mediante archivos CSV y JSON.
+
+Los archivos se almacenan dentro de la carpeta `data/`:
+
+| Archivo | Contenido |
+|---|---|
+| `inscritos.csv` | Identificador, nombre, correo, curso y prioridad de los estudiantes inscritos. |
+| `historial.json` | Períodos académicos, materias y calificaciones. |
+| `esperas.json` | Configuración del curso y estudiantes pendientes en las diferentes colas. |
+| `benchmarks.csv` | Resultados de las mediciones de rendimiento. |
+
+La carpeta se crea automáticamente cuando se ejecuta una exportación o una medición de rendimiento.
+
+### Exportación
+
+Desde el menú principal:
+
+- Seleccionar la opción 9.
+- Introducir `E` para exportar.
+- El programa genera o actualiza los archivos correspondientes.
+
+**Importante:** la información no se guarda automáticamente al cerrar el programa. Para conservar los cambios, es necesario utilizar la opción de exportación.
+
+### Importación
+
+Para recuperar registros guardados:
+
+- Iniciar el programa y configurar primero un curso.
+- Seleccionar la opción 9.
+- Introducir `I` para importar.
+- El programa lee los archivos existentes y valida su contenido.
+
+La importación comprueba la estructura de los archivos, los identificadores, las prioridades y los cupos disponibles antes de reemplazar la información activa.
+
+Si se detectan datos incorrectos, se cancela la operación y se conserva el estado anterior del sistema.
+
+## 6. Pruebas unitarias
+
+El proyecto utiliza el módulo `unittest` de Python para comprobar el comportamiento de las estructuras de datos y las operaciones académicas.
+
+Para ejecutar todas las pruebas desde la raíz del proyecto:
+
+`py -m unittest discover -s tests -v`
+
+Las pruebas comprueban aspectos como:
+
+- Funcionamiento LIFO y FIFO.
+- Atención de estudiantes según prioridad.
+- Inserciones, búsquedas y eliminaciones.
+- Saturación de cupos y listas de espera.
+- Retiros y reasignaciones.
+- Recuperación de estados mediante DESHACER.
+- Organización de historiales académicos.
+- Exportación, importación y validación de archivos.
+- Manejo de situaciones límite.
+
+El resultado mostrado por `unittest` permite identificar las pruebas satisfactorias y aquellas que requieren revisión.
+
+## 7. Análisis de eficiencia
+
+El módulo `benchmarks.py` utiliza `time.perf_counter()` para medir el rendimiento de las estructuras de datos.
+
+Se realizan cinco ejecuciones por escenario y se calculan el tiempo promedio y la desviación estándar en milisegundos.
+
+Las mediciones incluyen:
+
+- Inserción de 1.000, 5.000 y 10.000 elementos en `ListaSimple`.
+- Búsqueda de elementos al inicio, medio y final de `ListaSimple`.
+- Eliminación de elementos en `ListaSimple` y `ListaDoble`.
+- Procesamiento de 10.000 inserciones y 10.000 extracciones en cada una de las tres colas.
+
+Para ejecutar las mediciones:
+
+`py index.py --benchmark`
+
+Los resultados se muestran en consola y se guardan automáticamente en `data/benchmarks.csv`.
+
+Los tiempos pueden variar dependiendo de las características del equipo y las condiciones de ejecución.
+
+## 8. Demostración del funcionamiento
+
+El programa incluye un modo de demostración que permite observar los principales escenarios sin introducir manualmente todos los datos.
+
+Ejecutar:
+
+`py index.py --demo`
+
+La demostración presenta situaciones relacionadas con inscripciones, prioridades, cupos, listas de espera, retiros, deshacer operaciones, historiales y persistencia.
+
+Para la defensa académica se recomienda complementar esta demostración con una ejecución manual del menú, mostrando las operaciones y sus resultados directamente desde la consola.
+
+## 9. Documentación del proyecto
+
+El informe académico del SIGA presenta el planteamiento del problema, los objetivos, el diseño de la solución, las estructuras implementadas, el análisis de complejidad, las pruebas funcionales y los resultados de eficiencia.
+
+El código se encuentra organizado en módulos Python para facilitar su lectura, mantenimiento y ejecución.
+
+**Proyecto académico — Reto 4 de Programación II.**
